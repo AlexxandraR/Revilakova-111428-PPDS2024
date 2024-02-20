@@ -1,7 +1,11 @@
+"""This module solves the first assignment."""
+
+__authors__ = "Alexandra Reviľáková"
+__license__ = "MIT"
+
 from time import sleep
 from fei.ppds import Thread, Semaphore, print
 
-# Semaphore for synchronization of calling and receiving calls
 semaphore = Semaphore(0)
 
 
@@ -43,7 +47,6 @@ def call(name):
     """
     print(f"{name} calls.")
     sleep(1)
-    # Release the semaphore after the call
     semaphore.signal()
 
 
@@ -53,7 +56,6 @@ def receive_call(name):
 
     :param name: Name of the person receiving the call
     """
-    # Wait for the semaphore to free
     semaphore.wait()
     print(f"{name} receives call.")
     sleep(1)
@@ -79,11 +81,9 @@ def fero_thread():
     eat("Fero")
 
 
-# Creating threads for Jano and Fero
 jano = Thread(jano_thread)
 fero = Thread(fero_thread)
 
-# Connecting to the main thread
 jano.join()
 fero.join()
 
