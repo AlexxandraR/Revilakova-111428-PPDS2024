@@ -11,7 +11,12 @@ H = 10
 
 
 class SimpleBarrier:
-    """ A simple barrier implementation."""
+    """
+    A simple barrier implementation.
+    The implementation of this class is inspired by the example
+    from the second lecture, which is available at :
+    https://elearn.elf.stuba.sk/moodle/pluginfile.php/77169/mod_resource/content/2/2024-02.mutex%20multiplex%20randezvouse%20bariera.pdf.
+    """
     def __init__(self):
         """Initializes the barrier."""
         self.mutex = Mutex()

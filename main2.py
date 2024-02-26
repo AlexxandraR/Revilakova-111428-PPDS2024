@@ -13,7 +13,12 @@ H = 10
 
 
 class CombiningTreeBarrier:
-    """Implements a combining tree barrier."""
+    """
+    Implements a combining tree barrier.
+    Implementation of this class was adapted from the example provided
+    during the second seminar. Available at:
+    https://github.com/tj314/ppds-seminars/blob/ppds2024/seminar2/combining_tree_barrier.py.
+    """
     def __init__(self, num_threads):
         """Initializes the barrier with the number of threads."""
         if not log(num_threads + 1, 2).is_integer():
