@@ -72,8 +72,8 @@ def eat(i, shared):
         shared.fullPot.wait()
     shared.portion -= 1
     print(f"Savage {i} eats. The remaining portions: {shared.portion}")
-    sleep(2)
     shared.mutex.unlock()
+    sleep(2)
 
 
 def savage(i, shared):
