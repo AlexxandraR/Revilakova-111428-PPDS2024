@@ -1,4 +1,7 @@
-"""This module solves the third task."""
+"""
+This module solves the third task.
+The solution was inspired by the pseudocode from seminar 3.
+"""
 
 __authors__ = "Alexandra Reviľáková"
 __license__ = "MIT"
@@ -23,26 +26,26 @@ class SimpleBarrier:
         self.barrier = Semaphore(0)
         self.barrierCount = 0
 
-    def wait(self, i, shared, in_out):
+    def wait(self, i, shared, boarding):
         """
         Waits for all threads to reach the barrier and then proceeds.
 
-        :param i: The identifier of the passenger/thread
+        :param i: The identifier of the passenger
         :param shared: Shared resources among threads
-        :param in_out: Denotes whether the passenger is boarding (1) or getting off the train (0)
+        :param boarding: Denotes whether the passenger is boarding (1) or getting off the train (0)
         """
         self.mutex.lock()
         self.barrierCount += 1
-        if in_out == 1:
+        if boarding:
             print(f"The passenger {i} boarded the train. Number of passengers on the train: {self.barrierCount}.")
         else:
             print(f"The passenger {i} is ready to get off the train. Number of ready passengers: {self.barrierCount}.")
         if self.barrierCount == C:
-            if in_out == 1:
+            if boarding:
                 print(f"All passengers are on the train waiting to depart.")
                 shared.boarded.signal()
             else:
-                print(f"All passengers are ready to get off the train.")
+                print(f"All passengers got off the train.")
                 shared.unboarded.signal()
             self.barrier.signal(C)
             self.barrierCount = 0
@@ -71,10 +74,10 @@ def passenger_main(i, shared):
     """
     while True:
         shared.boardQ.wait()
-        shared.boardB.wait(i, shared, 1)
+        shared.boardB.wait(i, shared, True)
 
         shared.unboardQ.wait()
-        shared.unboardB.wait(i, shared, 0)
+        shared.unboardB.wait(i, shared, False)
 
 
 def car_main(shared):
