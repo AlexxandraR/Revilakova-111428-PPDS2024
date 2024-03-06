@@ -3,6 +3,8 @@
 V tomto zadaní sme mali implementovať simuláciu **húsenkovej dráhy**. Vlak
 realizujúci jazdy má svoju **kapacitu C**. **Počet cestujúcich** je **N**, pričom 
 platí, že **C < N**. Aby sa jazda začala, vlak musí byť plne obsadený. 
+To znamená, že ak by bola v programe kapacita vlaku vyššia ako počet 
+cestujúcich, jazda by sa nikdy nezrealizovala.
 Keď vlak ukončí svoju jazdu, najprv musia všetci cestujúci vystúpiť, 
 až potom môžu noví cestujúci nastúpiť.
 
