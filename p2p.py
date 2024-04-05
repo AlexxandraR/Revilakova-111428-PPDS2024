@@ -20,12 +20,12 @@ MASTER = 0
 
 def main():
     """
-        Main function for parallel matrix multiplication using send
-        and recv functions.
+    Main function for parallel matrix multiplication using send
+    and recv functions.
 
-        This function initializes MPI, distributes work among processes,
-        performs matrix multiplication, gathers results, and prints the
-        final matrix C along with the time taken for computation.
+    This function initializes MPI, distributes work among processes,
+    performs matrix multiplication, gathers results, and prints the
+    final matrix C along with the time taken for computation.
     """
     start_time = MPI.Wtime()
 
@@ -33,44 +33,43 @@ def main():
     rank = comm.Get_rank()
     nproc = comm.Get_size()
 
-    extra_rows = NRA % nproc
-
     print(f"{rank}: Starting parallel matrix multiplication example...")
     print(f"{rank}: Using matrix sizes A[{NRA}][{NCA}], B[{NCA}][{NCB}], C[{NRA}][{NCB}]")
 
-    rows = NRA // nproc
+    rows = np.zeros(nproc, dtype=np.int64)
+    offsets = np.zeros(nproc, dtype=np.int64)
+
+    rows_number = NRA // nproc
+    extra_rows = NRA % nproc
+    offset = 0
+    for proc in range(nproc):
+        if proc < extra_rows:
+            rows[proc] = rows_number + 1
+        else:
+            rows[proc] = rows_number
+        offsets[proc] = offset
+        offset += rows[proc]
+
+    local_a = None
     if rank == MASTER:
         print(f"{rank}: Initializing matrices A and B.")
         matrix_a = np.array([k+j for j in range(NRA) for k in range(NCA)]).reshape(NRA, NCA)
         matrix_b = np.array([k*j for j in range(NCA) for k in range(NCB)]).reshape(NCA, NCB)
 
-        previous_gap = 0
-        gap = 0
         for proc in range(nproc):
-            if extra_rows != 0 and proc < extra_rows:
-                gap += 1
             if proc == MASTER:
-                local_a = matrix_a[proc * rows:proc * rows + rows+gap]
-            elif proc < extra_rows:
-                comm.send(matrix_a[proc * rows + previous_gap:proc * rows + rows + gap], dest=proc)
+                local_a = matrix_a[offsets[proc]:offsets[proc] + rows[proc]]
             else:
-                comm.send(matrix_a[proc*rows + previous_gap:proc*rows+rows+gap], dest=proc)
-            if extra_rows != 0 and proc < extra_rows:
-                previous_gap += 1
+                comm.send(matrix_a[offsets[proc]:offsets[proc] + rows[proc]], dest=proc)
     else:
         local_a = comm.recv()
         matrix_b = None
 
     matrix_b = comm.bcast(matrix_b, root=MASTER)
 
-    # Perform sequential matrix multiplication
-    if extra_rows != 0 and rank < extra_rows:
-        row = rows + 1
-    else:
-        row = rows
-    local_c = np.zeros((row, NCB), dtype=int)
+    local_c = np.zeros((rows[rank], NCB), dtype=int)
     print(f"{rank}: Performing matrix multiplication...")
-    for i in range(row):
+    for i in range(rows[rank]):
         for j in range(NCB):
             for k in range(NCA):
                 local_c[i][j] += local_a[i][k] * matrix_b[k][j]
@@ -78,19 +77,11 @@ def main():
     # Combine results into matrix C
     matrix_c = np.zeros((NRA, NCB), dtype=int)
     if rank == MASTER:
-        previous_gap = 0
-        gap = 0
         for proc in range(nproc):
-            if extra_rows != 0 and proc < extra_rows:
-                gap += 1
             if proc == MASTER:
-                matrix_c[proc*rows:proc*rows+rows+gap] = local_c
-            elif proc < extra_rows:
-                matrix_c[proc * rows + previous_gap:proc * rows + rows + gap] = comm.recv(source=proc)
+                matrix_c[offsets[proc]:offsets[proc] + rows[proc]] = local_c
             else:
-                matrix_c[proc*rows + previous_gap:proc*rows+rows + previous_gap] = comm.recv(source=proc)
-            if extra_rows != 0 and proc < extra_rows:
-                previous_gap += 1
+                matrix_c[offsets[proc]:offsets[proc] + rows[proc]] = comm.recv(source=proc)
         print(f"{rank}: Here is the result matrix:")
         print(matrix_c)
 

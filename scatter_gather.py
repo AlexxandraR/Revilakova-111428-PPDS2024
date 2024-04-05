@@ -18,42 +18,33 @@ NCB = 7   # number of columns in matrix B
 MASTER = 0
 
 
-def initialise_matrix_a(extra_rows, total_rows, nproc, rows_per_proc):
+def initialise_matrix_a(rows, offsets):
     """
-    Initializes matrix A for a parallel computation.
+    Initializes the matrix A for parallel computation.
 
-    :param extra_rows: The number of extra rows.
-    :param total_rows: Total number of rows.
-    :param nproc: Total number of processes.
-    :param rows_per_proc: Number of rows per process.
+    :param rows: A list containing the number of rows for each process.
+    :param offsets: A list containing the displacement for each process.
     :return: A matrix A initialized for parallel computation.
     """
     matrix_a = []
-    for k in range(extra_rows):
+    for k in range(len(rows)):
         sub_matrix = []
-        for j in range(total_rows):
+        for j in range(rows[k]):
             sub_matrix.append([])
             for i in range(NCA):
-                sub_matrix[j].append(i + k * total_rows + j)
-        matrix_a.append(sub_matrix)
-    for k in range(nproc - extra_rows):
-        sub_matrix = []
-        for j in range(rows_per_proc):
-            sub_matrix.append([])
-            for i in range(NCA):
-                sub_matrix[j].append(i + k * rows_per_proc + j + extra_rows * total_rows)
+                sub_matrix[j].append(i + j + offsets[k])
         matrix_a.append(sub_matrix)
     return matrix_a
 
 
 def main():
     """
-       Main function for parallel matrix multiplication using scatter
-       and gather functions.
+    Main function for parallel matrix multiplication using scatter
+    and gather functions.
 
-       This function initializes MPI, distributes work among processes,
-       performs matrix multiplication, gathers results, and prints the
-       final matrix C along with the time taken for computation.
+    This function initializes MPI, distributes work among processes,
+    performs matrix multiplication, gathers results, and prints the
+    final matrix C along with the time taken for computation.
     """
     start_time = MPI.Wtime()
 
@@ -64,35 +55,38 @@ def main():
     print(f"{rank}: Starting parallel matrix multiplication example...")
     print(f"{rank}: Using matrix sizes A[{NRA}][{NCA}], B[{NCA}][{NCB}], C[{NRA}][{NCB}]")
 
-    rows_per_proc = NRA // nproc
-    extra_rows = NRA % nproc
-    total_rows = rows_per_proc + (1 if rank < extra_rows else 0)
+    rows = np.zeros(nproc, dtype=np.int64)
+    offsets = np.zeros(nproc, dtype=np.int64)
 
-    # Initialization of matrices A and B
+    rows_number = NRA // nproc
+    extra_rows = NRA % nproc
+    offset = 0
+    for proc in range(nproc):
+        if proc < extra_rows:
+            rows[proc] = rows_number + 1
+        else:
+            rows[proc] = rows_number
+        offsets[proc] = offset
+        offset += rows[proc]
+
     matrix_a = None
     matrix_b = None
+
     if rank == MASTER:
         print(f"{rank}: Initializing matrices A and B.")
-        matrix_a = initialise_matrix_a(extra_rows, total_rows, nproc, rows_per_proc)
+        matrix_a = initialise_matrix_a(rows, offsets)
         matrix_b = np.array([i*j for j in range(NCA) for i in range(NCB)]).reshape(NCA, NCB)
 
     local_a = comm.scatter(matrix_a, root=MASTER)
     matrix_b = comm.bcast(matrix_b, root=MASTER)
 
-    if rank < extra_rows:
-        rows = NRA // nproc + 1
-    else:
-        rows = NRA // nproc
-
-    # Perform sequential matrix multiplication
-    local_c = np.zeros((rows, NCB), dtype=int)
+    local_c = np.zeros((rows[rank], NCB), dtype=int)
     print(f"{rank}: Performing matrix multiplication...")
-    for i in range(rows):
+    for i in range(rows[rank]):
         for j in range(NCB):
             for k in range(NCA):
                 local_c[i][j] += local_a[i][k] * matrix_b[k][j]
 
-    # Combine results into matrix C
     matrix_c = comm.gather(local_c, root=MASTER)
     if rank == MASTER:
         matrix_c = np.array([ss for s in matrix_c for ss in s])
