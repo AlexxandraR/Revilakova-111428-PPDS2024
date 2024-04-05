@@ -82,7 +82,7 @@ def main():
 
         end_time = MPI.Wtime()
         duration = end_time - start_time
-        print("{:.6f}".format(duration))
+        print("Time: {:.6f}".format(duration))
 
     a_row.Free()
     b_row.Free()
