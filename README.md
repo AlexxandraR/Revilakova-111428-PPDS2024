@@ -40,7 +40,8 @@ vlákien v bloku**.
 
 ## Porovnanie algoritmov
 Paralelnú implementáciu **samplesortu** som porovnala so sekvenčnou
-verziou **bubblesortu**. Pri jednotlivých meraniach som prvky poľa 
+verziou **bubblesortu** na zariadeni s grafickou kartou **NVIDIA**. 
+Pri jednotlivých meraniach som prvky poľa 
 generovala náhodne v rozmedzí -500 až 500. Veľkosť poľa som postupne
 zväčšovala od 50 až po 30 000. Pre každú veľkosť poľa som realizovala
 20 meraní a z nich vypočítala priemerný čas pre oba algoritmy. Výsledky
@@ -48,17 +49,17 @@ porovnania sú znázornené v nasledujúcej tabuľke a grafe.
 
 | Veľkosť poľa    | Čas - sekvenčného bubblesortu [ms] | Čas - paralelného samplesortu [ms] |
 |-----------------|------------------------------------|------------------------------------|
-| 50              | 0,3                                | 379,8                              |
-| 100             | 1,1                                | 382,5                              |
-| 500             | 25,4                               | 398,4                              |
-| 1 000           | 113                                | 408,7                              |
-| 2 000           | 466,7                              | 397,8                              |
-| 5 000           | 2882,1                             | 397,7                              |
-| 10 000          | 11642,2                            | 396,3                              |
-| 20 000          | 46869,4                            | 411,6                              |
-| 30 000          | 104907,7                           | 447,7                              |
+| 50              | 0,4                                | 408,3                              |
+| 100             | 1,3                                | 410,3                              |
+| 500             | 27,7                               | 411,8                              |
+| 1 000           | 110,3                              | 414,3                              |
+| 2 000           | 456,5                              | 417,8                              |
+| 5 000           | 2889,3                             | 418,5                              |
+| 10 000          | 11842,6                            | 419,3                              |
+| 20 000          | 46969,5                            | 440,4                              |
+| 30 000          | 104957,7                           | 450,1                              |
 
-<img src="graf.png" alt="Graf" width="650" height="300">
+<img src="graf.png" alt="Graf" width="650" height="370">
 
 Ako môžeme vidieť, čas **paralelného samplesortu** narastá veľmi pomaly
 so zväčšujúcou sa veľkosťou vstupného poľa. Zatiaľ čo čas **sekvenčného 
