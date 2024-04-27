@@ -1,25 +1,58 @@
-import numpy as np
+"""
+This module solves the sixth task. The solution was
+inspired by the codes from lecture 11
+(available at:
+https://github.com/tj314/ppds-seminars/tree/ppds2024/lecture11)
+and seminar 11
+(available at:
+https://github.com/tj314/ppds-seminars/tree/ppds2024/seminar11).
+"""
+
+__authors__ = "Alexandra Reviľáková"
+__license__ = "MIT"
+
+from typing import Callable
+
+
+def consumer(func: Callable) -> Callable:
+    """Call `next` automatically on a generator."""
+
+    def wrapper(*args, **kw):
+        it = func(*args, **kw)
+        next(it)
+        return it
+
+    wrapper.__name__ = func.__name__
+    wrapper.__dict__ = func.__dict__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
 
 
 class Scheduler:
+    """Class to manage and execute coroutines."""
     def __init__(self):
+        """Initialize the Scheduler with an empty list of jobs."""
         self._jobs = []
 
     def add_job(self, it):
+        """Add a coroutine job to the scheduler.
+
+        :param it: The coroutine iterator to add.
+        """
         self._jobs.append(it)
 
     def start(self, data):
+        """Start executing the coroutines with provided data.
+
+        :param data: The data to send to the coroutines.
+        """
         counter = 0
         finished_coroutine_counter = 0
         while self._jobs:
             for i, job in enumerate(self._jobs):
                 try:
-                    if counter < len(data[0]):
-                        next(job)
-                        job.send(data[counter // len(data[0])])
-                        counter += 1
-                    elif counter < len(data[0]) * len(data):
-                        job.send(data[counter // len(data[0])])
+                    if counter < len(data):
+                        job.send(data[counter])
                         counter += 1
                     else:
                         job.close()
@@ -32,41 +65,50 @@ class Scheduler:
                         self._jobs.clear()
 
 
+@consumer
 def coroutine1():
+    """Coroutine that converts data to uppercase."""
     try:
         while True:
             data = yield
-            print("Coroutine 1:", data[0])
+            print("Coroutine 1:", data.upper())
     except GeneratorExit:
         print("Stops coroutine 1")
 
 
+@consumer
 def coroutine2():
+    """Coroutine that alternates uppercase and lowercase characters."""
     try:
         while True:
             data = yield
-            print("Coroutine 2:", data[1])
+            new = ""
+            for index, letter in enumerate(data):
+                if index % 2 == 0:
+                    new += letter.upper()
+                else:
+                    new += letter.lower()
+            print("Coroutine 2:", new)
     except GeneratorExit:
         print("Stops coroutine 2")
 
 
+@consumer
 def coroutine3():
+    """A coroutine that replaces spaces with underscores and
+    adds an underscore before and after a string."""
     try:
         while True:
             data = yield
-            print("Coroutine 3:", data[2])
+            new = "_" + data.replace(" ", "_") + "_"
+            print("Coroutine 3:", new)
     except GeneratorExit:
         print("Stops coroutine 3")
 
 
-def check_subarrays_length(data):
-    for subarray in data:
-        if len(subarray) != 3:
-            return False
-    return True
-
-
 def main():
+    """Main function to initialize and start the scheduler
+    with coroutines."""
     scheduler = Scheduler()
     it1 = coroutine1()
     scheduler.add_job(it1)
@@ -74,16 +116,9 @@ def main():
     scheduler.add_job(it2)
     it3 = coroutine3()
     scheduler.add_job(it3)
-    data = [["Ide", "piesen", "dokola,"], ["okolo", "stola", "-la -la ..."]]
-    if not check_subarrays_length(data):
-        print("All subarrays must have a length of 3.")
-    else:
-        try:
-            np_data = np.array(data)
-            scheduler.start(np_data)
-        except ValueError:
-            print("The array data has an inhomogeneous shape after 1 "
-                  "dimensions.")
+    data = ["Ide", "piesen", "dokola", "okolo", "stola", "-la -la ...",
+            "tralala"]
+    scheduler.start(data)
 
 
 if __name__ == "__main__":
