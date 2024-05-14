@@ -17,6 +17,42 @@ class Event:
         return self.x < other.x
 
 
+def calculate_area(rectangles):
+    """
+    Calculate the area of rectangles using sequential sweep line
+    algorithm.
+
+    :param rectangles: Rectangles whose area must be calculated."""
+    events = []
+    for left_bottom, right_top in rectangles:
+        events.append(Event(left_bottom[0], True,
+                            (left_bottom[1], right_top[1])))
+        events.append(Event(right_top[0], False,
+                            (left_bottom[1], right_top[1])))
+
+    events.sort()
+    active_rectangles = []
+    current_x = events[0].x
+    area = 0
+    active_height = 0
+
+    for event in events:
+        dx = event.x - current_x
+        current_x = event.x
+
+        area += dx * active_height
+
+        if event.is_start:
+            active_rectangles.append(event.y_range)
+            active_rectangles.sort()
+            active_height = merge_rectangles(active_rectangles)
+        else:
+            active_rectangles.remove(event.y_range)
+            active_height = merge_rectangles(active_rectangles)
+
+    return area
+
+
 def merge_rectangles(rectangles):
     """
     Merge overlapping rectangles.
@@ -47,20 +83,8 @@ def main():
             right_top = int(coordinates[2]), int(coordinates[3])
             rectangles.append((left_bottom, right_top))
 
-    events = []
-    for left_bottom, right_top in rectangles:
-        events.append(Event(left_bottom[0], True,
-                            (left_bottom[1], right_top[1])))
-        events.append(Event(right_top[0], False,
-                            (left_bottom[1], right_top[1])))
-
-    events.sort()
-    all_rectangles = []
-
-    for event in events:
-        all_rectangles.append(event.y_range)
-
-    print("Y-rozsah obdlznikov je:", merge_rectangles(all_rectangles))
+    area = calculate_area(rectangles)
+    print("Obsah plochy zaberanej obdĺžnikmi je:", area)
 
 
 if __name__ == "__main__":
