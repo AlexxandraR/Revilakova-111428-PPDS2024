@@ -31,7 +31,7 @@ def merge_rectangles(rectangles):
             merged.append(rect)
         else:
             merged[-1] = (merged[-1][0], max(merged[-1][1], rect[1]))
-    return sum(y2 - y1 for y1, y2 in merged)
+    return abs(sum(y2 - y1 for y1, y2 in merged))
 
 
 def main():
