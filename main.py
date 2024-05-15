@@ -31,10 +31,12 @@ def calculate_area(rectangles):
                             (left_bottom[1], right_top[1])))
 
     events.sort()
-    active_rectangles = []
+
+    active_rectangles = calculate_active_rectangles(events)
     current_x = events[0].x
     area = 0
     active_height = 0
+    index = 0
 
     for event in events:
         dx = event.x - current_x
@@ -42,15 +44,31 @@ def calculate_area(rectangles):
 
         area += dx * active_height
 
+        active_height = merge_rectangles(active_rectangles[index])
+        index += 1
+
+    return area
+
+
+def calculate_active_rectangles(events):
+    """
+    Calculate active rectangles at each event point.
+
+    :param events: List of event points sorted by x-coordinate.
+    :return: List of active rectangles at each event point.
+    """
+    active_rectangles_list = []
+    active_rectangles = []
+
+    for j in range(0, len(events)):
+        event = events[j]
         if event.is_start:
             active_rectangles.append(event.y_range)
             active_rectangles.sort()
-            active_height = merge_rectangles(active_rectangles)
         else:
             active_rectangles.remove(event.y_range)
-            active_height = merge_rectangles(active_rectangles)
-
-    return area
+        active_rectangles_list.append(active_rectangles[:])
+    return active_rectangles_list
 
 
 def merge_rectangles(rectangles):
