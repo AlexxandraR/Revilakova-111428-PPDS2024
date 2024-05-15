@@ -47,6 +47,9 @@ def calculate_area(rectangles):
         active_height = merge_rectangles(active_rectangles[index])
         index += 1
 
+    print(calculate_area_between_events(events, 0, 47,
+                                        []))
+
     return area
 
 
@@ -69,6 +72,35 @@ def calculate_active_rectangles(events):
             active_rectangles.remove(event.y_range)
         active_rectangles_list.append(active_rectangles[:])
     return active_rectangles_list
+
+
+def calculate_area_between_events(events, start_index, end_index,
+                                  active_rectangles):
+    """
+    Calculate the area between two event points.
+
+    :param events: List of event points sorted by x-coordinate.
+    :param start_index: Index of the starting event point.
+    :param end_index: Index of the ending event point.
+    :param active_rectangles: List of active rectangles at each event
+    point.
+    :return: The area between the event points.
+    """
+    current_x = events[start_index].x
+    active_height = 0
+    area = 0
+    for event in events[start_index:end_index]:
+        dx = event.x - current_x
+        current_x = event.x
+        area += dx * active_height
+        if event.is_start:
+            active_rectangles.append(event.y_range)
+            active_rectangles.sort()
+            active_height = merge_rectangles(active_rectangles)
+        else:
+            active_rectangles.remove(event.y_range)
+            active_height = merge_rectangles(active_rectangles)
+    return area
 
 
 def merge_rectangles(rectangles):
