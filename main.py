@@ -1,3 +1,22 @@
+"""
+This is the solution to the semester assignment.
+The solution was inspired by the presentation from lecture 11
+(available at:
+https://elearn.elf.stuba.sk/moodle/pluginfile.php/77449/mod_resource/content/1/Prednaska_12.pdf)
+and by video Sweep Line Algorithm (available at:
+https://www.youtube.com/watch?v=9wy6OA3Yvpg).
+"""
+
+__authors__ = "Alexandra Reviľáková"
+__license__ = "MIT"
+
+import sys
+from mpi4py import MPI
+import numpy as np
+
+MASTER = 0
+
+
 class Event:
     """
     Represents an event point in the sweep line algorithm.
@@ -17,40 +36,90 @@ class Event:
         return self.x < other.x
 
 
-def calculate_area(rectangles):
+def calculate_area(filename):
     """
-    Calculate the area of rectangles using sequential sweep line
-    algorithm.
+    Calculate the area of rectangles defined in a file using the sweep
+    line algorithm.
 
-    :param rectangles: Rectangles whose area must be calculated."""
+    :param filename: The name of the file containing rectangle
+    coordinates.
+    """
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    nproc = comm.Get_size()
+
     events = []
-    for left_bottom, right_top in rectangles:
-        events.append(Event(left_bottom[0], True,
-                            (left_bottom[1], right_top[1])))
-        events.append(Event(right_top[0], False,
-                            (left_bottom[1], right_top[1])))
+    start_time = 0
 
-    events.sort()
+    if rank == MASTER:
+        start_time = MPI.Wtime()
 
-    active_rectangles = calculate_active_rectangles(events)
-    current_x = events[0].x
-    area = 0
-    active_height = 0
-    index = 0
+        rectangles = []
 
-    for event in events:
-        dx = event.x - current_x
-        current_x = event.x
+        with open(filename, 'r') as file:
+            for line in file:
+                coordinates = line.strip().split(',')
+                left_bottom = int(coordinates[0]), int(coordinates[1])
+                right_top = int(coordinates[2]), int(coordinates[3])
+                rectangles.append((left_bottom, right_top))
 
-        area += dx * active_height
+        for left_bottom, right_top in rectangles:
+            events.append(Event(left_bottom[0], True,
+                                (left_bottom[1], right_top[1])))
+            events.append(Event(right_top[0], False,
+                                (left_bottom[1], right_top[1])))
 
-        active_height = merge_rectangles(active_rectangles[index])
-        index += 1
+        events.sort()
 
-    print(calculate_area_between_events(events, 0, 47,
-                                        []))
+    events = comm.bcast(events, root=MASTER)
 
-    return area
+    if nproc > len(events):
+        if rank == 0:
+            print(f"The number of processes must be less or equal to "
+                  f"{len(events)}.")
+        return
+
+    lines = np.zeros(nproc, dtype=np.int64)
+    offsets = np.zeros(nproc + 1, dtype=np.int64)
+    active_rectangles1 = None
+
+    if rank == MASTER:
+        lines_num = len(events) // nproc
+        extra_lines = len(events) % nproc
+        offset = 0
+
+        for proc in range(nproc):
+            if proc < extra_lines:
+                lines[proc] = lines_num + 1
+            else:
+                lines[proc] = lines_num
+            offsets[proc] = offset
+            offset += lines[proc]
+        offsets[nproc] = len(events)
+
+        active_rectangles1 = calculate_active_rectangles(events)
+        active_rectangles1_copy = active_rectangles1[:]
+        active_rectangles1 = [[]]
+        for i in offsets[1:len(offsets) - 1]:
+            active_rectangles1.append(active_rectangles1_copy[i - 1])
+
+    offsets = comm.bcast(offsets, root=MASTER)
+    active_rectangles = comm.scatter(active_rectangles1, root=MASTER)
+
+    area = calculate_area_between_events(events, offsets[rank],
+                                         offsets[rank + 1] + 1,
+                                         active_rectangles)
+
+    print(f"Rank: {rank} - area: {area}")
+    final_area = comm.gather(area, root=MASTER)
+
+    if rank == MASTER:
+        final_area = sum(final_area)
+        print("Final area of rectangles:", final_area)
+
+        end_time = MPI.Wtime()
+        duration = end_time - start_time
+        print("Time: {:.6f}".format(duration))
 
 
 def calculate_active_rectangles(events):
@@ -121,20 +190,11 @@ def merge_rectangles(rectangles):
 
 
 def main():
-    """Main function to test class Event and method
-    merge_rectangles(rectangles)"""
-    filename = "rectangles8.txt"
-    rectangles = []
-
-    with open(filename, 'r') as file:
-        for line in file:
-            coordinates = line.strip().split(',')
-            left_bottom = int(coordinates[0]), int(coordinates[1])
-            right_top = int(coordinates[2]), int(coordinates[3])
-            rectangles.append((left_bottom, right_top))
-
-    area = calculate_area(rectangles)
-    print("Obsah plochy zaberanej obdĺžnikmi je:", area)
+    """Main function to execute the program."""
+    if len(sys.argv) != 2:
+        print("Usage: python main.py rectangles_file.txt")
+        return
+    calculate_area(sys.argv[1])
 
 
 if __name__ == "__main__":
