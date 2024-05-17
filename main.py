@@ -1,6 +1,6 @@
 """
 This is the solution to the semester assignment.
-The solution was inspired by the presentation from lecture 11
+The solution was inspired by the presentation from lecture 12
 (available at:
 https://elearn.elf.stuba.sk/moodle/pluginfile.php/77449/mod_resource/content/1/Prednaska_12.pdf)
 and by video Sweep Line Algorithm (available at:
@@ -186,7 +186,7 @@ def merge_rectangles(rectangles):
             merged.append(rect)
         else:
             merged[-1] = (merged[-1][0], max(merged[-1][1], rect[1]))
-    return abs(sum(y2 - y1 for y1, y2 in merged))
+    return sum(abs(y2 - y1) for y1, y2 in merged)
 
 
 def main():
