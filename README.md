@@ -35,7 +35,7 @@ V tomto repozitári sa nachádzajú aj jednotlivé vstupné
 testovacie súbory a testovací kód v súbore **main_test.py**.
 Experimenty boli vykonané na počítači **Devana** pre 
 **5, 20, 40 a 64** uzlov. Každé meranie som opakovala 
-**100-krát**, odstránila som prvé 2 meranie a následne 
+**100-krát**, odstránila som prvé 2 merania a následne 
 som vypočítala aritmetický priemer. V nasledujúcej tabuľke 
 sú uvedené jednotlivé hodnoty pre príslušné merania 
 a na grafe sú znázornené závislosti.
